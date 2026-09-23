@@ -56,14 +56,15 @@ export function DocumentViewerModal({
 
               {restricted && (
                 <div
-                  className="pointer-events-none absolute inset-0 flex flex-wrap content-around justify-around overflow-hidden opacity-[0.15]"
+                  className="pointer-events-none absolute inset-0 flex flex-wrap content-around justify-around overflow-hidden"
+                  style={{ isolation: "isolate" }}
                   aria-hidden
                 >
                   {Array.from({ length: 24 }).map((_, i) => (
                     <span
                       key={i}
-                      className="whitespace-nowrap text-xs font-semibold text-slate-900"
-                      style={{ transform: "rotate(-30deg)" }}
+                      className="whitespace-nowrap text-xs font-semibold"
+                      style={{ transform: "rotate(-30deg)", color: "#808080", mixBlendMode: "difference" }}
                     >
                       {stamp}
                     </span>

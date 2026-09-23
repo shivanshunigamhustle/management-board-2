@@ -10,6 +10,36 @@ function daysFromNow(days: number, hour = 10, minute = 0) {
   return d;
 }
 
+async function mkDoc(data: {
+  meetingId?: string | null;
+  uploadedById: string;
+  fileName: string;
+  fileType: string;
+  version?: number;
+  restricted?: boolean;
+}) {
+  const placeholderText = `${data.fileName}\n\nThis is placeholder content generated for the demo — in a real deployment this would be the actual uploaded ${data.fileType} file, stored in the database and served through /api/documents/[id].`;
+
+  const created = await prisma.document.create({
+    data: {
+      meetingId: data.meetingId ?? undefined,
+      uploadedById: data.uploadedById,
+      fileName: data.fileName,
+      fileUrl: "",
+      fileType: data.fileType,
+      version: data.version ?? 1,
+      restricted: data.restricted ?? false,
+      fileData: Buffer.from(placeholderText, "utf-8"),
+      mimeType: "text/plain",
+    },
+  });
+
+  return prisma.document.update({
+    where: { id: created.id },
+    data: { fileUrl: `/api/documents/${created.id}` },
+  });
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash("demo1234", 10);
 
@@ -130,27 +160,21 @@ async function main() {
     },
   });
 
-  const q3Pack = await prisma.document.create({
-    data: {
-      meetingId: q3Meeting.id,
-      uploadedById: admin.id,
-      fileName: "Q3-Board-Pack.pdf",
-      fileUrl: "/uploads/q3-board-pack.pdf",
-      fileType: "PDF",
-      version: 1,
-    },
+  const q3Pack = await mkDoc({
+    meetingId: q3Meeting.id,
+    uploadedById: admin.id,
+    fileName: "Q3-Board-Pack.pdf",
+    fileType: "PDF",
+    version: 1,
   });
 
-  await prisma.document.create({
-    data: {
-      meetingId: q3Meeting.id,
-      uploadedById: admin.id,
-      fileName: "Q3-Financial-Summary.xlsx",
-      fileUrl: "/uploads/q3-financial-summary.xlsx",
-      fileType: "XLSX",
-      version: 2,
-      restricted: true,
-    },
+  await mkDoc({
+    meetingId: q3Meeting.id,
+    uploadedById: admin.id,
+    fileName: "Q3-Financial-Summary.xlsx",
+    fileType: "XLSX",
+    version: 2,
+    restricted: true,
   });
 
   await prisma.agendaItem.updateMany({
@@ -204,16 +228,13 @@ async function main() {
     },
   });
 
-  const maDoc = await prisma.document.create({
-    data: {
-      meetingId: liveMeeting.id,
-      uploadedById: admin.id,
-      fileName: "MA-Deal-Brief-Confidential.pdf",
-      fileUrl: "/uploads/ma-deal-brief-confidential.pdf",
-      fileType: "PDF",
-      version: 1,
-      restricted: true,
-    },
+  const maDoc = await mkDoc({
+    meetingId: liveMeeting.id,
+    uploadedById: admin.id,
+    fileName: "MA-Deal-Brief-Confidential.pdf",
+    fileType: "PDF",
+    version: 1,
+    restricted: true,
   });
 
   await prisma.vote.createMany({
@@ -279,15 +300,12 @@ async function main() {
     },
   });
 
-  await prisma.document.create({
-    data: {
-      meetingId: q2Meeting.id,
-      uploadedById: admin.id,
-      fileName: "Q2-Board-Pack.pdf",
-      fileUrl: "/uploads/q2-board-pack.pdf",
-      fileType: "PDF",
-      version: 1,
-    },
+  await mkDoc({
+    meetingId: q2Meeting.id,
+    uploadedById: admin.id,
+    fileName: "Q2-Board-Pack.pdf",
+    fileType: "PDF",
+    version: 1,
   });
 
   const q2Resolution = await prisma.resolution.findFirstOrThrow({ where: { meetingId: q2Meeting.id } });
@@ -336,16 +354,13 @@ async function main() {
     },
   });
 
-  await prisma.document.create({
-    data: {
-      meetingId: auditMeeting.id,
-      uploadedById: admin.id,
-      fileName: "FY25-External-Audit-Report.pdf",
-      fileUrl: "/uploads/fy25-external-audit-report.pdf",
-      fileType: "PDF",
-      version: 1,
-      restricted: true,
-    },
+  await mkDoc({
+    meetingId: auditMeeting.id,
+    uploadedById: admin.id,
+    fileName: "FY25-External-Audit-Report.pdf",
+    fileType: "PDF",
+    version: 1,
+    restricted: true,
   });
 
   const riskMeeting = await prisma.meeting.create({
@@ -384,15 +399,12 @@ async function main() {
     },
   });
 
-  await prisma.document.create({
-    data: {
-      meetingId: riskMeeting.id,
-      uploadedById: admin2.id,
-      fileName: "Enterprise-Risk-Register-Q2.pdf",
-      fileUrl: "/uploads/enterprise-risk-register-q2.pdf",
-      fileType: "PDF",
-      version: 3,
-    },
+  await mkDoc({
+    meetingId: riskMeeting.id,
+    uploadedById: admin2.id,
+    fileName: "Enterprise-Risk-Register-Q2.pdf",
+    fileType: "PDF",
+    version: 3,
   });
 
   // ================= 6. Archived meeting =================
@@ -425,15 +437,12 @@ async function main() {
     },
   });
 
-  await prisma.document.create({
-    data: {
-      meetingId: archivedMeeting.id,
-      uploadedById: admin.id,
-      fileName: "Board-Skills-Matrix-2025.pdf",
-      fileUrl: "/uploads/board-skills-matrix-2025.pdf",
-      fileType: "PDF",
-      version: 1,
-    },
+  await mkDoc({
+    meetingId: archivedMeeting.id,
+    uploadedById: admin.id,
+    fileName: "Board-Skills-Matrix-2025.pdf",
+    fileType: "PDF",
+    version: 1,
   });
 
   // ================= 7. Meeting scheduled to auto-archive (demonstrates scheduled archival) =================
@@ -498,54 +507,39 @@ async function main() {
     },
   });
 
-  await prisma.document.create({
-    data: {
-      meetingId: financeCircular.id,
-      uploadedById: admin2.id,
-      fileName: "FY26-Consolidated-Budget-Draft.xlsx",
-      fileUrl: "/uploads/fy26-consolidated-budget-draft.xlsx",
-      fileType: "XLSX",
-      version: 1,
-    },
+  await mkDoc({
+    meetingId: financeCircular.id,
+    uploadedById: admin2.id,
+    fileName: "FY26-Consolidated-Budget-Draft.xlsx",
+    fileType: "XLSX",
+    version: 1,
   });
 
   // ================= General library documents (not tied to a meeting) =================
-  await prisma.document.createMany({
-    data: [
-      {
-        meetingId: null,
-        uploadedById: admin.id,
-        fileName: "Board-Charter-2026.pdf",
-        fileUrl: "/uploads/board-charter-2026.pdf",
-        fileType: "PDF",
-        version: 2,
-      },
-      {
-        meetingId: null,
-        uploadedById: admin.id,
-        fileName: "Code-of-Conduct.pdf",
-        fileUrl: "/uploads/code-of-conduct.pdf",
-        fileType: "PDF",
-        version: 1,
-      },
-      {
-        meetingId: null,
-        uploadedById: admin2.id,
-        fileName: "Delegation-of-Authority-Matrix.xlsx",
-        fileUrl: "/uploads/delegation-of-authority-matrix.xlsx",
-        fileType: "XLSX",
-        version: 4,
-        restricted: true,
-      },
-      {
-        meetingId: null,
-        uploadedById: admin.id,
-        fileName: "Director-Onboarding-Pack.pptx",
-        fileUrl: "/uploads/director-onboarding-pack.pptx",
-        fileType: "PPTX",
-        version: 1,
-      },
-    ],
+  await mkDoc({
+    uploadedById: admin.id,
+    fileName: "Board-Charter-2026.pdf",
+    fileType: "PDF",
+    version: 2,
+  });
+  await mkDoc({
+    uploadedById: admin.id,
+    fileName: "Code-of-Conduct.pdf",
+    fileType: "PDF",
+    version: 1,
+  });
+  await mkDoc({
+    uploadedById: admin2.id,
+    fileName: "Delegation-of-Authority-Matrix.xlsx",
+    fileType: "XLSX",
+    version: 4,
+    restricted: true,
+  });
+  await mkDoc({
+    uploadedById: admin.id,
+    fileName: "Director-Onboarding-Pack.pptx",
+    fileType: "PPTX",
+    version: 1,
   });
 
   // ================= Action items sprinkled across dashboards (not tied to the meetings above) =================

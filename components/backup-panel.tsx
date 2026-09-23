@@ -15,14 +15,15 @@ export function BackupPanel() {
       <div>
         {last ? (
           <p className="flex items-center gap-1.5 text-sm text-emerald-700">
-            <CheckCircle2 className="h-4 w-4" /> {last.fileName} · {new Date(last.at).toLocaleTimeString()}
+            <CheckCircle2 className="h-4 w-4" /> Downloaded {last.fileName} · {new Date(last.at).toLocaleTimeString()}
           </p>
         ) : (
           <p className="text-sm text-slate-600">No backup taken this session.</p>
         )}
         <p className="text-[11px] text-slate-400 mt-0.5 max-w-md">
-          In production this would run automatically once daily via a scheduled host job; this button triggers the
-          same copy-to-storage routine on demand for the demo.
+          Downloads a full JSON snapshot of every record straight to your device — no server-side file storage
+          involved, so it works the same locally or in production. Your hosted database provider (e.g. Neon,
+          Vercel Postgres) also runs its own automated backups independently of this button.
         </p>
         {error && (
           <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1">
@@ -39,7 +40,16 @@ export function BackupPanel() {
           startTransition(async () => {
             try {
               const result = await runBackupNow();
-              setLast(result);
+              const blob = new Blob([result.dataJson], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = result.fileName;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+              setLast({ fileName: result.fileName, at: result.at });
               setError(null);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Backup failed.");
@@ -47,7 +57,7 @@ export function BackupPanel() {
           })
         }
       >
-        {pending ? "Backing up…" : "Back up now"}
+        {pending ? "Preparing…" : "Back up now"}
       </Button>
     </div>
   );

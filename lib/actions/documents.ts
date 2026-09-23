@@ -1,8 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/data";
@@ -54,13 +52,8 @@ export async function uploadDocument(formData: FormData) {
   const meetingId = String(formData.get("meetingId") ?? "") || undefined;
   if (!file || file.size === 0) throw new Error("No file provided");
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-
-  const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadsDir, safeName), buffer);
-
+  const mimeType = file.type || "application/octet-stream";
   const fileType = file.name.split(".").pop()?.toUpperCase() ?? "FILE";
 
   let existing = null;
@@ -73,17 +66,23 @@ export async function uploadDocument(formData: FormData) {
   if (existing) {
     await prisma.document.update({
       where: { id: existing.id },
-      data: { fileUrl: `/uploads/${safeName}`, version: existing.version + 1 },
+      data: { fileData: buffer, mimeType, version: existing.version + 1 },
     });
   } else {
-    await prisma.document.create({
+    const created = await prisma.document.create({
       data: {
         meetingId,
         uploadedById: user.id,
         fileName: file.name,
-        fileUrl: `/uploads/${safeName}`,
+        fileUrl: "",
         fileType,
+        fileData: buffer,
+        mimeType,
       },
+    });
+    await prisma.document.update({
+      where: { id: created.id },
+      data: { fileUrl: `/api/documents/${created.id}` },
     });
   }
 
