@@ -1,0 +1,180 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Role: "MEMBER" | "ADMIN"
+// MeetingType: "MEETING" | "CIRCULAR"
+// MeetingStatus: "SCHEDULED" | "LIVE" | "COMPLETED" | "ARCHIVED"
+// VoteChoice: "FOR" | "AGAINST" | "ABSTAIN"
+// AttendanceStatus: "INVITED" | "PRESENT" | "ABSENT"
+// ActionItemStatus: "OPEN" | "DONE"
+// MeetingRole (per-attendance): "PRESENTER" | "VOTER" | "OBSERVER"
+// SQLite has no native enum support in Prisma, so these are plain strings
+// validated at the application layer (see lib/enums.ts).
+
+model User {
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  passwordHash        String
+  role                String
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  offlineMode         Boolean   @default(false)
+  lastSyncedAt        DateTime?
+  createdAt           DateTime  @default(now())
+
+  documents    Document[]          @relation("UploadedBy")
+  votes        Vote[]
+  actionItems  ActionItem[]        @relation("AssignedTo")
+  attendances  MeetingAttendance[]
+  activityLogs ActivityLog[]
+  comments     Comment[]
+  chatMessages ChatMessage[]
+}
+
+model Category {
+  id       String     @id @default(cuid())
+  name     String
+  parentId String?
+  parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
+  meetings Meeting[]
+}
+
+model Meeting {
+  id                String    @id @default(cuid())
+  title             String
+  categoryId        String?
+  category          Category? @relation(fields: [categoryId], references: [id])
+  type              String    @default("MEETING")
+  scheduledAt       DateTime
+  status            String    @default("SCHEDULED")
+  joinLink          String?
+  description       String?
+  scheduledArchiveAt DateTime?
+  createdAt         DateTime  @default(now())
+
+  agendaItems AgendaItem[]
+  documents   Document[]
+  resolutions Resolution[]
+  actionItems ActionItem[]
+  attendances MeetingAttendance[]
+  minutes     Minutes?
+  chatMessages ChatMessage[]
+}
+
+model AgendaItem {
+  id         String    @id @default(cuid())
+  meetingId  String
+  meeting    Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  order      Int
+  title      String
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id])
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  meetingId    String?
+  meeting      Meeting? @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+  fileName     String
+  fileUrl      String
+  fileType     String
+  version      Int      @default(1)
+  restricted   Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  agendaItems  AgendaItem[]
+  comments     Comment[]
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Resolution {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  text      String
+  votes     Vote[]
+}
+
+model Vote {
+  id           String     @id @default(cuid())
+  resolutionId String
+  resolution   Resolution @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  choice       String
+  castAt       DateTime   @default(now())
+
+  @@unique([resolutionId, userId])
+}
+
+model ActionItem {
+  id           String    @id @default(cuid())
+  meetingId    String
+  meeting      Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  assignedToId String
+  assignedTo   User      @relation("AssignedTo", fields: [assignedToId], references: [id])
+  description  String
+  dueDate      DateTime?
+  status       String    @default("OPEN")
+}
+
+model MeetingAttendance {
+  id          String    @id @default(cuid())
+  meetingId   String
+  meeting     Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  status      String    @default("INVITED")
+  meetingRole String    @default("VOTER")
+  signedAt    DateTime?
+
+  @@unique([meetingId, userId])
+}
+
+model Minutes {
+  id          String    @id @default(cuid())
+  meetingId   String    @unique
+  meeting     Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  content     String
+  finalizedAt DateTime?
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  targetType String
+  targetId   String?
+  createdAt  DateTime @default(now())
+}
