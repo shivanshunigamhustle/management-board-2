@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Plus, CalendarClock } from "lucide-react";
 import { getMeetingsList, runScheduledArchival } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
@@ -24,9 +23,9 @@ export async function MeetingsListView({ role }: { role: "MEMBER" | "ADMIN" }) {
         description="Every meeting and circular resolution, organized by category."
         action={
           role === "ADMIN" ? (
-            <Link href="/admin/meetings/new">
-              <Button icon={Plus}>New meeting / circular</Button>
-            </Link>
+            <Button href="/admin/meetings/new" icon={Plus}>
+              New meeting / circular
+            </Button>
           ) : undefined
         }
       />

@@ -18,9 +18,9 @@ export default async function AdminDashboard() {
         title={`Welcome back, ${user.name?.split(" ")[0]}`}
         description="Admin & Secretary overview"
         action={
-          <Link href="/admin/meetings/new">
-            <Button icon={Plus}>New meeting / circular</Button>
-          </Link>
+          <Button href="/admin/meetings/new" icon={Plus}>
+            New meeting / circular
+          </Button>
         }
       />
 

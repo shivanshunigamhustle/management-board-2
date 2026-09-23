@@ -54,9 +54,9 @@ export function CalendarView({
         description="Every scheduled meeting and circular, at a glance."
         action={
           role === "ADMIN" ? (
-            <Link href="/admin/meetings/new">
-              <Button icon={Plus}>Schedule new</Button>
-            </Link>
+            <Button href="/admin/meetings/new" icon={Plus}>
+              Schedule new
+            </Button>
           ) : undefined
         }
       />

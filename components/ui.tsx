@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Inbox } from "lucide-react";
+import Link from "next/link";
 
 export function Card({
   title,
@@ -73,32 +74,57 @@ export function EmptyState({ children, icon: Icon = Inbox }: { children: React.R
   );
 }
 
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonSize = "sm" | "md";
+
+function buttonClasses(variant: ButtonVariant, size: ButtonSize, className: string) {
+  const base =
+    "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  const sizes = size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-4 py-2 text-sm";
+  const variants: Record<ButtonVariant, string> = {
+    primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-sm",
+    secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm",
+    ghost: "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
+    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
+  };
+  return `${base} ${sizes} ${variants[variant]} ${className}`;
+}
+
+/** Renders as a Next.js <Link> when `href` is given, otherwise a <button>. Never nests a <button> inside an <a>. */
 export function Button({
   variant = "primary",
   size = "md",
   icon: Icon,
   className = "",
   children,
+  href,
+  target,
+  rel,
   ...props
 }: {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
-  size?: "sm" | "md";
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   icon?: LucideIcon;
   className?: string;
   children?: React.ReactNode;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const base =
-    "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
-  const sizes = size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-4 py-2 text-sm";
-  const variants: Record<string, string> = {
-    primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-sm",
-    secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm",
-    ghost: "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
-    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
-  };
+  href?: string;
+  target?: string;
+  rel?: string;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children">) {
+  const iconEl = Icon && <Icon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />;
+
+  if (href) {
+    return (
+      <Link href={href} target={target} rel={rel} className={buttonClasses(variant, size, className)}>
+        {iconEl}
+        {children}
+      </Link>
+    );
+  }
+
   return (
-    <button className={`${base} ${sizes} ${variants[variant]} ${className}`} {...props}>
-      {Icon && <Icon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />}
+    <button className={buttonClasses(variant, size, className)} {...props}>
+      {iconEl}
       {children}
     </button>
   );

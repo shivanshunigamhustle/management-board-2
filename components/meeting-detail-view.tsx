@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { format } from "date-fns";
 import { notFound } from "next/navigation";
 import {
@@ -76,17 +75,15 @@ export async function MeetingDetailView({
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             {meeting.joinLink && (
-              <a href={meeting.joinLink} target="_blank" rel="noreferrer">
-                <Button icon={Video}>Join meeting</Button>
-              </a>
+              <Button href={meeting.joinLink} target="_blank" rel="noreferrer" icon={Video}>
+                Join meeting
+              </Button>
             )}
             {isAdmin && (
               <div className="flex gap-2">
-                <Link href={`/admin/meetings/${meeting.id}/agenda`}>
-                  <Button variant="secondary" size="sm" icon={Pencil}>
-                    Edit agenda
-                  </Button>
-                </Link>
+                <Button href={`/admin/meetings/${meeting.id}/agenda`} variant="secondary" size="sm" icon={Pencil}>
+                  Edit agenda
+                </Button>
                 <ArchiveToggle meetingId={meeting.id} status={meeting.status} />
               </div>
             )}
