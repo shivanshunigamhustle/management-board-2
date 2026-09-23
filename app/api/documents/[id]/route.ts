@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+// Every document is fetched fresh per request (auth-gated, DB-backed) — never
+// statically optimized. Without this, Next.js may try to execute this handler
+// during the build's "collect page data" step, which fails since there's no
+// real request/DB connection available inside the build sandbox.
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) {
